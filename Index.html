@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.8);
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .controls-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .api-key-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .api-key-section h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .api-key-section p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .generate-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            margin-top: 40px;
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .image-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+
+        .generated-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .image-info {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        .download-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #218838;
+            transform: translateY(-1px);
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
+        }
+
+        .model-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+
+        @media (max-width: 768px) {
+            .controls-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 AI Image Generator</h1>
+            <p>Create stunning images with artificial intelligence</p>
+        </div>
+
+        <div class="main-content">
+            <div class="api-key-section">
+                <h3>🔑 API Configuration</h3>
+                <p>Enter your Hugging Face API token to generate images. You can get a free token at <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a></p>
+                <p><strong>Note:</strong> If you encounter CORS errors, you may need to use this app on a hosted domain rather than opening the HTML file directly.</p>
+                <div class="input-group">
+                    <input type="password" id="apiKey" placeholder="Enter your Hugging Face API token">
+                </div>
+                <div style="margin-top: 10px;">
+                    <button type="button" id="testApiBtn" style="background: #17a2b8; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 14px;">
+                        🧪 Test API Connection
+                    </button>
+                    <span id="apiStatus" style="margin-left: 10px; font-size: 14px;"></span>
+                </div>
+            </div>
+
+            <div class="model-info">
+                <strong>🛠️ Troubleshooting CORS Issues:</strong><br>
+                If you get "Failed to fetch" errors, try these solutions:<br>
+                • <strong>Host online:</strong> Upload to Netlify, Vercel, or GitHub Pages<br>
+                • <strong>Use HTTPS:</strong> Some APIs require secure connections<br>
+                • <strong>Check API token:</strong> Make sure it's valid and has the right permissions<br>
+                <br>
+                <strong>Current Models:</strong> Stable Diffusion XL, v1-5, and v1-4 (automatic fallback)
+            </div>
+
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="prompt">✨ Image Description</label>
+                    <textarea id="prompt" placeholder="Describe the image you want to generate... (e.g., 'A beautiful sunset over mountains with a lake reflection, digital art style')"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="negativePrompt">🚫 Negative Prompt (Optional)</label>
+                    <input type="text" id="negativePrompt" placeholder="What to avoid in the image... (e.g., 'blurry, low quality, distorted')">
+                </div>
+
+                <div class="controls-row">
+                    <div class="input-group">
+                        <label for="width">📐 Width</label>
+                        <select id="width">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024" selected>1024px</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="height">📏 Height</label>
+                        <select id="height">
+                            <option value="512">512px</option>
+                            <option value="768">768px</option>
+                            <option value="1024" selected>1024px</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="numImages">🔢 Images Count</label>
+                        <select id="numImages">
+                            <option value="1" selected>1 image</option>
+                            <option value="2">2 images</option>
+                            <option value="4">4 images</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="generate-btn" onclick="generateImages()">
+                    🎨 Generate Images
+                </button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Generating your amazing images... This may take 30-60 seconds.</p>
+            </div>
+
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        let generationCount = 0;
+
+        async function generateImages() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const prompt = document.getElementById('prompt').value.trim();
+            const negativePrompt = document.getElementById('negativePrompt').value.trim();
+            const width = parseInt(document.getElementById('width').value);
+            const height = parseInt(document.getElementById('height').value);
+            const numImages = parseInt(document.getElementById('numImages').value);
+
+            // Validation
+            if (!apiKey) {
+                showError('Please enter your Hugging Face API token.');
+                return;
+            }
+
+            if (!prompt) {
+                showError('Please enter a description for the image you want to generate.');
+                return;
+            }
+
+            if (prompt.length < 10) {
+                showError('Please provide a more detailed description (at least 10 characters).');
+                return;
+            }
+
+            // Clear previous results and show loading
+            document.getElementById('results').innerHTML = '';
+            showLoading(true);
+            
+            const generateBtn = document.querySelector('.generate-btn');
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Generating...';
+
+            try {
+                const images = [];
+                
+                // Generate multiple images
+                for (let i = 0; i < numImages; i++) {
+                    const imageBlob = await callHuggingFaceAPI(apiKey, prompt, negativePrompt, width, height);
+                    if (imageBlob) {
+                        const imageUrl = URL.createObjectURL(imageBlob);
+                        images.push({
+                            url: imageUrl,
+                            blob: imageBlob,
+                            prompt: prompt,
+                            dimensions: `${width}x${height}`,
+                            timestamp: new Date().toLocaleString()
+                        });
+                    }
+                }
+
+                if (images.length > 0) {
+                    displayImages(images);
+                    generationCount++;
+                } else {
+                    showError('Failed to generate any images. Please try again.');
+                }
+
+            } catch (error) {
+                console.error('Generation error:', error);
+                showError(`Failed to generate images: ${error.message}`);
+            } finally {
+                showLoading(false);
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🎨 Generate Images';
+            }
+        }
+
+        async function callHuggingFaceAPI(apiKey, prompt, negativePrompt, width, height) {
+            // Try multiple API endpoints for better compatibility
+            const API_ENDPOINTS = [
+                "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
+                "https://api-inference.huggingface.co/models/runwayml/stable-diffusion-v1-5",
+                "https://api-inference.huggingface.co/models/CompVis/stable-diffusion-v1-4"
+            ];
+            
+            const payload = {
+                inputs: prompt,
+                parameters: {
+                    negative_prompt: negativePrompt || undefined,
+                    width: Math.min(width, 768), // Limit size for compatibility
+                    height: Math.min(height, 768),
+                    num_inference_steps: 30, // Reduced for faster generation
+                    guidance_scale: 7.5
+                }
+            };
+
+            let lastError = null;
+
+            // Try each endpoint
+            for (let i = 0; i < API_ENDPOINTS.length; i++) {
+                try {
+                    console.log(`Trying API endpoint ${i + 1}/${API_ENDPOINTS.length}`);
+                    
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
+                    
+                    const response = await fetch(API_ENDPOINTS[i], {
+                        headers: {
+                            'Authorization': `Bearer ${apiKey}`,
+                            'Content-Type': 'application/json',
+                            'User-Agent': 'Mozilla/5.0 (compatible; AI-Image-Generator/1.0)',
+                        },
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                        signal: controller.signal,
+                        mode: 'cors'
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        let errorMessage = `HTTP ${response.status}`;
+                        
+                        try {
+                            const errorJson = JSON.parse(errorText);
+                            errorMessage = errorJson.error || errorJson.message || errorMessage;
+                        } catch (e) {
+                            errorMessage = errorText || errorMessage;
+                        }
+                        
+                        if (response.status === 401) {
+                            throw new Error('Invalid API token. Please check your Hugging Face API token.');
+                        } else if (response.status === 503) {
+                            console.log('Model loading, trying next endpoint...');
+                            lastError = new Error('Model is currently loading. Trying alternative model...');
+                            continue;
+                        } else if (response.status === 429) {
+                            throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+                        }
+                        
+                        lastError = new Error(errorMessage);
+                        continue;
+                    }
+
+                    const blob = await response.blob();
+                    if (blob.size === 0) {
+                        lastError = new Error('Received empty response');
+                        continue;
+                    }
+
+                    return blob;
+
+                } catch (error) {
+                    console.error(`API endpoint ${i + 1} failed:`, error);
+                    
+                    if (error.name === 'AbortError') {
+                        lastError = new Error('Request timed out. Please try again.');
+                    } else if (error.message.includes('Failed to fetch')) {
+                        lastError = new Error('Network error. Please check your internet connection and try again.');
+                    } else {
+                        lastError = error;
+                    }
+                    
+                    // If it's an auth error, don't try other endpoints
+                    if (error.message.includes('Invalid API token')) {
+                        throw error;
+                    }
+                    
+                    continue;
+                }
+            }
+
+            // If all endpoints failed, throw the last error
+            throw lastError || new Error('All API endpoints failed');
+        }
+
+        function displayImages(images) {
+            const resultsDiv = document.getElementById('results');
+            
+            let html = `
+                <h2>🖼️ Generated Images (Batch #${generationCount})</h2>
+                <div class="image-grid">
+            `;
+
+            images.forEach((image, index) => {
+                html += `
+                    <div class="image-card">
+                        <img src="${image.url}" alt="Generated Image ${index + 1}" class="generated-image">
+                        <div class="image-info">
+                            <strong>Prompt:</strong> ${escapeHtml(image.prompt.substring(0, 100))}${image.prompt.length > 100 ? '...' : ''}<br>
+                            <strong>Size:</strong> ${image.dimensions}<br>
+                            <strong>Generated:</strong> ${image.timestamp}
+                        </div>
+                        <button class="download-btn" onclick="downloadImage('${image.url}', 'ai-generated-image-${Date.now()}-${index + 1}.png')">
+                            💾 Download Image
+                        </button>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadImage(imageUrl, filename) {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function showError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="error">❌ ${message}</div>`;
+        }
+
+        function showLoading(show) {
+            const loadingDiv = document.getElementById('loading');
+            loadingDiv.style.display = show ? 'block' : 'none';
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Add sample prompts functionality
+        
